@@ -324,11 +324,10 @@ public class JakartaMailFlowableMailClient implements FlowableMailClient {
             for (DataSource attachment : attachments) {
                 BodyPart bodyPart = new MimeBodyPart();
                 bodyPart.setDisposition(Part.ATTACHMENT);
-                try {
-                    bodyPart.setFileName(MimeUtility.encodeText(attachment.getName(), charset, null));
-                } catch (UnsupportedEncodingException e) {
-                    throw new FlowableMailException("Could not encode attachment file name", e);
-                }
+                // Do not pre-encode the file name with MimeUtility.encodeText(): setFileName() sets a MIME parameter,
+                // and Jakarta Mail's own ParameterList already RFC 2231 encodes it, including continuation folding
+                // for long values. Doing both corrupts the header for names that are long and non-ASCII.
+                bodyPart.setFileName(attachment.getName());
                 bodyPart.setDataHandler(new DataHandler(attachment));
                 rootContainer.addBodyPart(bodyPart);
             }
