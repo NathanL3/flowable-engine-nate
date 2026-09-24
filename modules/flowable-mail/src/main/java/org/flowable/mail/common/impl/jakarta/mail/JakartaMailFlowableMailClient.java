@@ -15,7 +15,6 @@ package org.flowable.mail.common.impl.jakarta.mail;
 import java.io.UnsupportedEncodingException;
 import java.net.IDN;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Date;
@@ -341,8 +340,9 @@ public class JakartaMailFlowableMailClient implements FlowableMailClient {
         // (the JVM's file.encoding, unless mail.mime.charset is set), so it silently diverges from the charset
         // used for the rest of the message. ParameterList.set(name, value, charset) does the same RFC 2231
         // encoding and continuation folding, but with the charset we actually pass it, and leaves ASCII names
-        // untouched.
-        String mimeCharset = charset != null ? charset : StandardCharsets.UTF_8.name();
+        // untouched. When no charset is configured, fall back to the same default MimeBodyPart.setText() falls
+        // back to for the message body, so the file name and body stay consistent with each other.
+        String mimeCharset = charset != null ? charset : MimeUtility.mimeCharset(MimeUtility.getDefaultJavaCharset());
         ParameterList parameters = new ParameterList();
         parameters.set("filename", fileName, mimeCharset);
         ContentDisposition disposition = new ContentDisposition(Part.ATTACHMENT, parameters);
