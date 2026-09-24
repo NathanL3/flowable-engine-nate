@@ -52,4 +52,22 @@ class JakartaMailFlowableMailClientTest {
         assertThat(attachmentPart.getFileName()).isEqualTo(fileName);
     }
 
+    @Test
+    void attachmentFileNameIsEncodedWithTheGivenCharsetRatherThanThePlatformDefault() throws MessagingException {
+        String fileName = "café.pdf";
+        ByteArrayDataSource attachment = new ByteArrayDataSource("attachment content".getBytes(), "application/pdf");
+        attachment.setName(fileName);
+
+        MimeMultipart multipart = client.createMultiPartContent(null, null, "ISO-8859-1", List.of(attachment));
+
+        BodyPart attachmentPart = multipart.getBodyPart(0);
+        String contentDisposition = attachmentPart.getHeader("Content-Disposition")[0];
+
+        // 'é' is a single byte (0xE9) in ISO-8859-1 but two bytes (0xC3 0xA9) in UTF-8: this string can only
+        // appear if the ISO-8859-1 charset passed to createMultiPartContent() was actually used to encode it,
+        // rather than UTF-8 or the JVM's platform default charset.
+        assertThat(contentDisposition).contains("ISO-8859-1''caf%E9.pdf");
+        assertThat(attachmentPart.getFileName()).isEqualTo(fileName);
+    }
+
 }
